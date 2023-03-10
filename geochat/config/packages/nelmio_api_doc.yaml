@@ -16,7 +16,7 @@ nelmio_api_doc:
                         message:
                             type: array
                             items:
-                                $ref: "#/components/schemas/"
+                                $ref: "#/components/schemas/mess"
                 mess:
                     properties:
                         id:
