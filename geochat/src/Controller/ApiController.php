@@ -1,6 +1,9 @@
 <?php
 
+
+
 namespace App\Controller;
+
 
 use App\Entity\Message;
 use App\Repository\MessageRepository;
@@ -11,15 +14,74 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use App\Services\AddressAPIService;
 use Doctrine\ORM\EntityManagerInterface;
-use FOS\RestBundle\Serializer\Serializer;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+use OpenApi\Annotations as OA;
+
+
 // ce controller montre le fichier json qui sera utilisé par la carte
+
+// pas besoin de #[View()] car on ne renvoie pas de vue
+
 
 #[Route('/api')]
 class ApiController extends AbstractController
 {
+
+    /**
+     * @OA\Get(path="/api/messages",
+     *  tags={"messages"},
+     * summary="Get messages",
+     * description="Get messages",
+     * operationId="getMessages",
+     * @OA\Parameter(
+     *    name="address",
+     *   in="path",
+     *  description="Address",
+     * required=true,
+     * @OA\Schema(
+     *   type="string"
+     * )
+     * ),
+     * @OA\Parameter(
+     *   name="radius",
+     *  in="query",
+     * description="Radius",
+     * required=false,
+     * @OA\Schema(
+     *  type="integer"
+     * )
+     * ),
+     * @OA\Parameter(
+     *  name="posted_after",
+     * in="query",
+     * description="Posted after",
+     * required=false,
+     * @OA\Schema(
+     * type="string",
+     * format="date-time"
+     * )
+     * ),
+     * @OA\Response(
+     * response=200,
+     * description="Success",
+     * @OA\JsonContent(
+     * type="array",
+     * @OA\Items(ref="#/components/schemas/Message")
+     * )
+     * ),
+     * 
+     * @OA\Response(
+     * response=400,
+     * description="Bad request",
+     * @OA\JsonContent(
+     * type="array",
+     * @OA\Items(ref="#/components/schemas/Message")
+     * )
+     * )
+     * )
+     */
     #[View(serializerGroups: ['message_basic'])]
     #[Route('/messages', name: 'app_api', methods: ['GET'])]
     public function index(MessageRepository $messageRepository, Request $request)/*: Response*/
@@ -98,12 +160,35 @@ class ApiController extends AbstractController
         return $this->json($data);*/
     }
 
-    // pas besoin de #[View()] car on ne renvoie pas de vue
+
+    /**
+     * @OA\Post(path="/api/message",
+     *     tags={"messages"},
+     *     summary="Add a new message",
+     *     description="",
+     *     operationId="placeOrder",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="File in json format",
+     *         @OA\JsonContent(ref="#/components/schemas/Message")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="successful operation",
+     *         @OA\Schema(ref="#/components/schemas/Message")
+     *     ),
+     *     @OA\Response(response=400, description="Problem with the request")
+     * )
+     */
     #[View()]
     #[Route('/message', methods: ['POST'])]
-    public function addMessageEnJson(MessageRepository $messageRepository, Request $request, 
-    SerializerInterface $serializer, EntityManagerInterface $em, ValidatorInterface $validator)
-    {
+    public function addMessageEnJson(
+        MessageRepository $messageRepository,
+        Request $request,
+        SerializerInterface $serializer,
+        EntityManagerInterface $em,
+        ValidatorInterface $validator
+    ) {
         // request->getContent() récupère le contenu de la requête ( le json )
         // $serializer->deserialize() permet de transformer le json en objet
         // bien verifier que message est bien une entité
@@ -132,11 +217,11 @@ class ApiController extends AbstractController
         $message->setLongitude($lnglat["longitude"]);
         $message->setLatitude($lnglat["latitude"]);
 
-        
+
 
         $messageRepository->save($message, true);
         $em->flush();
-        
+
         return ["message" => $message];
     }
 }
