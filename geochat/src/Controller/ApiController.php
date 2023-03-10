@@ -8,6 +8,9 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
+use App\Services\AddressAPIService;
+use FOS\RestBundle\Serializer\Serializer;
+use Symfony\Component\Serializer\SerializerInterface;
 
 // ce controller montre le fichier json qui sera utilisé par la carte
 
@@ -18,14 +21,35 @@ class ApiController extends AbstractController
     #[Route('/message', name: 'app_api')]
     public function index(MessageRepository $messageRepository, Request $request)/*: Response*/
     {
-        $messages = $messageRepository->findBy([], ['date' => 'DESC'], 10);
+        // Récupération des paramètres
+        
+        $address = $request->query->get('address');
+        
+        if (!$address) {
+            return $this->json(['error' => 'The address parameter is required.'], Response::HTTP_BAD_REQUEST);
+        }
 
-        $radius = $request->query->get("radius", 2);
-        $address = $request->query->get("address");
+        // 2000 car en mètres
+        $radius = $request->query->get('radius', 2000);
 
-        return [
-            'messages' => $messages,
-        ];
+
+        // Récupération des coordonnées GPS
+        $addressAPI = new AddressAPIService();
+ 
+        $lnglat = $addressAPI->getLngLat($address);
+
+        $longitude = $lnglat["longitude"];
+        $latitude = $lnglat["latitude"];
+
+        // Recherche des adrresses à proximité
+        $query = $messageRepository->findClose($longitude, $latitude, $radius)
+            ->orderBy('m.date', 'DESC')
+            ->setMaxResults(10);
+
+
+        $message = $query->getQuery();
+
+        return ["messages" => ["message" => $message->execute()]];
         /*
         $message = $messageRepository->findAll();
         $data = [];
@@ -42,4 +66,12 @@ class ApiController extends AbstractController
         }
         return $this->json($data);*/
     }
-}
+
+    #[View(serializerGroups: ['message_basic'])]
+    #[Route('/message', methods: ['POST'])]
+    public function addMessageEnJson(Request $request, SerializerInterface $serializer)
+    {
+        $message = $serializer->deserialize($request->getContent(), Message::class, 'json');
+        return 0;
+    }
+} 

@@ -36,11 +36,11 @@ class MessageController extends AbstractController
     {
         $api = new AddressAPIService();
         $message = new Message();
-        
+
         /*$message
             ->setLongitude(44.8437806)
             ->setLatitude(-0.5710693);*/
-            
+
         $form = $this->createForm(MessageType::class, $message);
         $form->handleRequest($request);
 
@@ -49,7 +49,7 @@ class MessageController extends AbstractController
             // appeler notre méthode pour avoir notre longitude et latitude
             $rep = $api->getLngLat($message->getAdress());
 
-            if ($rep != null){
+            if ($rep != null) {
                 $message
                     ->setLongitude($rep['longitude'])
                     ->setLatitude($rep['latitude']);
