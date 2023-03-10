@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Message;
 use App\Repository\MessageRepository;
 use FOS\RestBundle\Controller\Annotations\View;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -9,8 +10,10 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use App\Services\AddressAPIService;
+use Doctrine\ORM\EntityManagerInterface;
 use FOS\RestBundle\Serializer\Serializer;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 // ce controller montre le fichier json qui sera utilisé par la carte
 
@@ -18,38 +21,66 @@ use Symfony\Component\Serializer\SerializerInterface;
 class ApiController extends AbstractController
 {
     #[View(serializerGroups: ['message_basic'])]
-    #[Route('/message', name: 'app_api')]
+    #[Route('/messages', name: 'app_api', methods: ['GET'])]
     public function index(MessageRepository $messageRepository, Request $request)/*: Response*/
     {
-        // Récupération des paramètres
-        
+        // Récupération des paramètres en get on utilise pas $_GET car on est en symfony
         $address = $request->query->get('address');
-        
-        if (!$address) {
+        // si on a pas d'adresse il y a null dans $address
+        // aller dans le profiler avec /_profiler/api/message... pour voir les dumps
+        dump($address);
+
+        if ($address == null) {
             return $this->json(['error' => 'The address parameter is required.'], Response::HTTP_BAD_REQUEST);
         }
 
         // 2000 car en mètres
         $radius = $request->query->get('radius', 2000);
 
+        $posted_after = $request->query->get('posted_after');
+
 
         // Récupération des coordonnées GPS
         $addressAPI = new AddressAPIService();
- 
+
         $lnglat = $addressAPI->getLngLat($address);
+
+        if ($lnglat == null) {
+            return $this->json(['error' => 'The address is not valid.'], Response::HTTP_BAD_REQUEST);
+        }
 
         $longitude = $lnglat["longitude"];
         $latitude = $lnglat["latitude"];
 
-        // Recherche des adrresses à proximité
-        $query = $messageRepository->findClose($longitude, $latitude, $radius)
+        $queryBuiler = $messageRepository->findClose($longitude, $latitude, $radius)
             ->orderBy('m.date', 'DESC')
             ->setMaxResults(10);
 
+        if ($posted_after != null) {
+            $queryBuiler->andWhere('m.date > :posted_after')
+                ->setParameter('posted_after', new \DateTime($posted_after));
+        }
 
-        $message = $query->getQuery();
 
-        return ["messages" => ["message" => $message->execute()]];
+        $message = $queryBuiler->getQuery()->execute();
+
+        return ["messages" => ["message" => $message]];
+
+        /*
+        $longitude = $lnglat["longitude"];
+        $latitude = $lnglat["latitude"];
+
+        // requête pour récupérer les messages que l'on peut modifier
+        $query = $messageRepository->findClose($longitude, $latitude, $radius)
+            ->orderBy('m.date', 'DESC')
+            ->setMaxResults(10);
+*/
+
+        // Récupération des messages
+        //$message = $query->getQuery();
+
+
+        //return ["messages" => ["message" => $message->execute()]];
         /*
         $message = $messageRepository->findAll();
         $data = [];
@@ -67,11 +98,45 @@ class ApiController extends AbstractController
         return $this->json($data);*/
     }
 
-    #[View(serializerGroups: ['message_basic'])]
+    // pas besoin de #[View()] car on ne renvoie pas de vue
+    #[View()]
     #[Route('/message', methods: ['POST'])]
-    public function addMessageEnJson(Request $request, SerializerInterface $serializer)
+    public function addMessageEnJson(MessageRepository $messageRepository, Request $request, 
+    SerializerInterface $serializer, EntityManagerInterface $em, ValidatorInterface $validator)
     {
+        // request->getContent() récupère le contenu de la requête ( le json )
+        // $serializer->deserialize() permet de transformer le json en objet
+        // bien verifier que message est bien une entité
+        /*
+        dump($request->getContent("text"));
+        dump($request->getContent("adress"));
+        if ($request->getContent("text") == null && $request->getContent("adress") == null) {
+            return $this->json(['error' => 'The text parameter is required.'], Response::HTTP_BAD_REQUEST);
+            dump("error");
+        } else {
+            $message = $serializer->deserialize($request->getContent(), Message::class, 'json');
+            dump($request->getContent());
+            dump($message);
+        }*/
         $message = $serializer->deserialize($request->getContent(), Message::class, 'json');
-        return 0;
+
+        $error = $validator->validate($message);
+
+        if (count($error) > 0) {
+            return $this->json($error, Response::HTTP_BAD_REQUEST);
+        }
+        //$messageRepository->save($message, true); // true pour dire qu'on veut flusher
+        $addressAPI = new AddressAPIService();
+
+        $lnglat = $addressAPI->getLngLat($message->getAdress());
+        $message->setLongitude($lnglat["longitude"]);
+        $message->setLatitude($lnglat["latitude"]);
+
+        
+
+        $messageRepository->save($message, true);
+        $em->flush();
+        
+        return ["message" => $message];
     }
-} 
+}

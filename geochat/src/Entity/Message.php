@@ -14,6 +14,7 @@ class Message
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups('message_basic')]
     private ?int $id = null;
 
     #[ORM\Column]
@@ -26,10 +27,12 @@ class Message
     #[Assert\Range(min: -90, max: 90)]
     private ?float $latitude = null;
 
+    #[Assert\NotBlank(message: "Le texte est obligatoire")]
     #[ORM\Column(type: "text",)]
     #[Groups('message_basic')]
     private ?string $text = null;
 
+    #[Assert\NotBlank(message: "L'adresse est obligatoire")]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups('message_basic')]
     private ?string $adress = null;
