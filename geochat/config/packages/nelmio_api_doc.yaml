@@ -7,16 +7,12 @@ nelmio_api_doc:
         components:
             schemas:
                 Message:
-                    description: "Response for some queries"
-                    type: object
                     properties:
                         distance:
                             type: float
                             example: 1789.2,
                         message:
-                            type: array
-                            items:
-                                $ref: "#/components/schemas/mess"
+                            ref: "#/components/schemas/message_basic"
                 mess:
                     properties:
                         id:
@@ -28,8 +24,20 @@ nelmio_api_doc:
                         date:
                             type: string
                             example: "2020-01-01 00:00:00"
+                address:
+                    properties:
+                        text:
+                            type: string
+                            example: "coucou"
+                        address:
+                            type: string
+                            example: "123 av Paris"
     areas: # to filter documented areas
         path_patterns:
             - ^/api(?!/doc$) # Accepts routes under /api except /api/doc
+    models:
+        names:
+            - { alias: message_basic, type: App\Entity\Message, groups: [message_basic]}
+        
 
         

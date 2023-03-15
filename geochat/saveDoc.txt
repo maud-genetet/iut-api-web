@@ -1,0 +1,91 @@
+/**
+* @OA\Post(path="/api/message",
+*     tags={"messages"},
+*     summary="Add a new message",
+*     description="coucou",
+*     @OA\RequestBody(
+*         required=true,
+*         description="File in json format",
+*         @OA\JsonContent(ref="#/components/schemas/Message")
+*     ),
+*     @OA\Response(
+*         response=200,
+*         description="successful operation",
+*         @OA\Schema(ref="#/components/schemas/Message")
+*     ),
+*     @OA\Response(response=400, description="Problem with the request")
+* )
+*/
+#[OA\Post(
+    path : "/api/message",
+    tags : "messages",
+    summary : "Add a new message",
+    description : "coucou"
+)]
+#[OA\Parameter(
+    name : "coucou",
+    in : "query",
+    required : true
+)]
+#[OA\Response(
+    response : 200,
+    description : "successful operation"
+)]
+#[OA\Response(
+    response : 400,
+    description : "Problem with the request"
+)]
+
+
+
+
+/**
+     * @OA\Get(path="/api/messages",
+     *  tags={"messages"},
+     * summary="Get messages",
+     * description="Get messages",
+     * operationId="getMessages",
+     * @OA\Parameter(
+     *    name="address",
+     *   in="path",
+     *  description="Address",
+     * required=true,
+     * @OA\Schema(
+     *   type="string"
+     * )
+     * ),
+     * @OA\Parameter(
+     *   name="radius",
+     *  in="query",
+     * description="Radius",
+     * required=false,
+     * @OA\Schema(
+     *  type="integer"
+     * )
+     * ),
+     * @OA\Parameter(
+     *  name="posted_after",
+     * in="query",
+     * description="Posted after",
+     * required=false,
+     * @OA\Schema(
+     * type="string",
+     * format="date-time"
+     * )
+     * ),
+     * @OA\Response(
+     * response=200,
+     * description="Success",
+     * @OA\JsonContent(
+     * type="array",
+     * @OA\Items(ref="#/components/schemas/Message")
+     * )
+     * ),
+     * 
+     * @OA\Response(
+     * response=400,
+     * description="Bad request"
+     * )
+     * )
+     */
+

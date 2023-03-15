@@ -17,7 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
 
 // ce controller montre le fichier json qui sera utilisé par la carte
@@ -29,59 +29,42 @@ use OpenApi\Annotations as OA;
 class ApiController extends AbstractController
 {
 
-    /**
-     * @OA\Get(path="/api/messages",
-     *  tags={"messages"},
-     * summary="Get messages",
-     * description="Get messages",
-     * operationId="getMessages",
-     * @OA\Parameter(
-     *    name="address",
-     *   in="path",
-     *  description="Address",
-     * required=true,
-     * @OA\Schema(
-     *   type="string"
-     * )
-     * ),
-     * @OA\Parameter(
-     *   name="radius",
-     *  in="query",
-     * description="Radius",
-     * required=false,
-     * @OA\Schema(
-     *  type="integer"
-     * )
-     * ),
-     * @OA\Parameter(
-     *  name="posted_after",
-     * in="query",
-     * description="Posted after",
-     * required=false,
-     * @OA\Schema(
-     * type="string",
-     * format="date-time"
-     * )
-     * ),
-     * @OA\Response(
-     * response=200,
-     * description="Success",
-     * @OA\JsonContent(
-     * type="array",
-     * @OA\Items(ref="#/components/schemas/Message")
-     * )
-     * ),
-     * 
-     * @OA\Response(
-     * response=400,
-     * description="Bad request",
-     * @OA\JsonContent(
-     * type="array",
-     * @OA\Items(ref="#/components/schemas/Message")
-     * )
-     * )
-     * )
-     */
+    #[OA\Get(
+        tags: "messages",
+        summary: "Get messages",
+        description: "Get messages 2",
+    )]
+    #[OA\Parameter(
+        name: "adress",
+        description: "coucou",
+        example: "salut",
+        in: "query",
+        required: true,
+    )]
+    #[OA\Parameter(
+        name: "radius",
+        in: "query",
+        required: false
+    )]
+    #[OA\Parameter(
+        name: "posted_after",
+        in: "query",
+        required: false
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "successful operation",
+        content: new OA\JsonContent(
+            type: "array",
+            items: new OA\Items(
+                ref: "#/components/schemas/Message"
+            )
+        )
+    )]
+    #[OA\Response(
+        response: 400,
+        description: "Problem with the request"
+    )]
     #[View(serializerGroups: ['message_basic'])]
     #[Route('/messages', name: 'app_api', methods: ['GET'])]
     public function index(MessageRepository $messageRepository, Request $request)/*: Response*/
@@ -161,25 +144,24 @@ class ApiController extends AbstractController
     }
 
 
-    /**
-     * @OA\Post(path="/api/message",
-     *     tags={"messages"},
-     *     summary="Add a new message",
-     *     description="",
-     *     operationId="placeOrder",
-     *     @OA\RequestBody(
-     *         required=true,
-     *         description="File in json format",
-     *         @OA\JsonContent(ref="#/components/schemas/Message")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="successful operation",
-     *         @OA\Schema(ref="#/components/schemas/Message")
-     *     ),
-     *     @OA\Response(response=400, description="Problem with the request")
-     * )
-     */
+    #[OA\RequestBody(
+        required : true,
+        description: "fichier jason",
+        content : new OA\JsonContent(
+            type : "array",
+            items: new OA\Items(
+                ref: "#/components/schemas/address"
+            )
+        )
+    )]
+    #[OA\Response(
+        response : 200,
+        description : "successful operation"
+    )]
+    #[OA\Response(
+        response : 400,
+        description : "Problem with the request"
+    )]
     #[View()]
     #[Route('/message', methods: ['POST'])]
     public function addMessageEnJson(
