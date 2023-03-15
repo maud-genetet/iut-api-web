@@ -6,7 +6,9 @@ namespace App\Controller;
 
 
 use App\Entity\Message;
+use App\Entity\User;
 use App\Repository\MessageRepository;
+use App\Repository\UserRepository;
 use FOS\RestBundle\Controller\Annotations\View;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,6 +18,7 @@ use App\Services\AddressAPIService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 use OpenApi\Attributes as OA;
 
@@ -29,6 +32,9 @@ use OpenApi\Attributes as OA;
 class ApiController extends AbstractController
 {
 
+    #[OA\Tag(
+        name : "message"
+    )]
     #[OA\Get(
         tags: "messages",
         summary: "Get messages",
@@ -144,6 +150,9 @@ class ApiController extends AbstractController
     }
 
 
+    #[OA\Tag(
+        name : "message"
+    )]
     #[OA\RequestBody(
         required : true,
         description: "fichier jason",
@@ -205,5 +214,48 @@ class ApiController extends AbstractController
         $em->flush();
 
         return ["message" => $message];
+    }
+
+
+    #[OA\Tag(
+        name : "user"
+    )]
+    #[OA\RequestBody(
+        required : true,
+        content : new OA\JsonContent(
+            ref: "#/components/schemas/user_basic"
+        )
+    )]
+    #[OA\Response(
+        response : 200,
+        description : "successful operation"
+    )]
+    #[OA\Response(
+        response : 400,
+        description : "Manque attribut"
+    )]
+    #[View()]
+    #[Route('/register', methods: ['POST'])]
+    public function addUser( UserRepository $userRepo, Request $request, SerializerInterface $serializer,
+            EntityManagerInterface $em, ValidatorInterface $validator, UserPasswordHasherInterface $userPasswordHasher) {
+        $user = $serializer->deserialize($request->getContent(), User::class, 'json');
+
+        $user->setPassword(
+            $userPasswordHasher->hashPassword(
+                $user,
+                $user->getPassword()
+            )
+        );
+
+        $error = $validator->validate($user);
+
+        if (count($error) > 0) {
+            return $this->json($error, Response::HTTP_BAD_REQUEST);
+        }
+
+        $userRepo->save($user,true);
+        $em->flush();
+
+        return ["user" => $user];
     }
 }
